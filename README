@@ -28,7 +28,7 @@ keystroke:
 
 1. **Scancode → virtual key:** the keyboard sends a scancode, the physical
    position of the key, translated into a virtual key, the key as Windows
-   names it (`E`, `Enter`…).
+   names it (`E`, `Enter`, …).
 2. **Modifiers → column:** a key types one character per combination of
    modifiers, each stored in a column (None, Shift, AltGr, Shift+AltGr, …), the
    modifiers held select the column. AltGr is Ctrl+Alt.
@@ -117,8 +117,3 @@ Limitations
 
 * The keyboard is added to the list of the installing user only.
 * 64-bit Windows on x86-64 only: no ARM64 or 32-bit DLL support.
-
-License
--------
-
-MIT, see `LICENSE`.

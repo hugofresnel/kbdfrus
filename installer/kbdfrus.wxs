@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Installs the layout DLL in System32, registers the layout and adds it to the
+  keyboards of the installing user. Uninstalling removes all of them. Any
+  installed version, older or newer, is replaced.
+
+  Identifiers, to keep across versions so that upgrades replace the layout:
+
+  * UpgradeCode: identifies the product for Windows Installer; random GUID.
+  * Klid: layout identifier; "7", 3 random digits, 040c for French.
+  * LayoutId: random, unique among installed layouts, at most 0fff.
+  * Component GUIDs: identify each component; random, new one when its content changes.
+-->
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <?define UpgradeCode = "7DD36ECF-FBA1-4EE3-89B0-71C4430FE51F" ?>
+  <?define Klid = "7579040c" ?>
+  <?define LayoutId = "0cac" ?>
+  <?define LayoutsKey = "SYSTEM\CurrentControlSet\Control\Keyboard Layouts" ?>
+
+  <Product Id="*"
+           Name="French (US, Linux) Keyboard"
+           Version="$(var.Version)"
+           Manufacturer="Hugo Fresnel"
+           Language="1033"
+           UpgradeCode="$(var.UpgradeCode)">
+    <Package InstallerVersion="500" Compressed="yes" InstallScope="perMachine" />
+
+    <MajorUpgrade AllowDowngrades="yes" AllowSameVersionUpgrades="yes" />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="System64Folder">
+        <Component Id="Layout" Guid="6AA73CC3-7129-46CA-885C-901CB9495025" Win64="yes">
+          <File Id="kbdfrus.dll" Name="KBDFRUS.DLL" Source="$(var.Dll)" KeyPath="yes" />
+          <RegistryKey Root="HKLM" Key="$(var.LayoutsKey)\$(var.Klid)">
+            <RegistryValue Name="Layout File" Type="string" Value="KBDFRUS.DLL" />
+            <RegistryValue Name="Layout Text" Type="string" Value="French (US, Linux)" />
+            <RegistryValue Name="Layout Id" Type="string" Value="$(var.LayoutId)" />
+          </RegistryKey>
+        </Component>
+      </Directory>
+    </Directory>
+
+    <Feature Id="Layout" Level="1">
+      <ComponentRef Id="Layout" />
+    </Feature>
+
+    <Binary Id="Actions" SourceFile="$(var.Actions)" />
+
+    <CustomAction Id="SetAddUserLayout" Property="AddUserLayout" Value="040c:$(var.Klid)" />
+    <CustomAction Id="AddUserLayout" BinaryKey="Actions" DllEntry="AddLayout"
+                  Execute="deferred" Impersonate="yes" Return="ignore" />
+    <CustomAction Id="SetRemoveUserLayout" Property="RemoveUserLayout" Value="040c:$(var.Klid)" />
+    <CustomAction Id="RemoveUserLayout" BinaryKey="Actions" DllEntry="RemoveLayout"
+                  Execute="deferred" Impersonate="yes" Return="ignore" />
+
+    <InstallExecuteSequence>
+      <Custom Action="SetAddUserLayout" Before="AddUserLayout">NOT REMOVE</Custom>
+      <Custom Action="AddUserLayout" After="WriteRegistryValues">NOT REMOVE</Custom>
+      <Custom Action="SetRemoveUserLayout" Before="RemoveUserLayout">REMOVE="ALL" AND NOT UPGRADINGPRODUCTCODE</Custom>
+      <Custom Action="RemoveUserLayout" After="InstallInitialize">REMOVE="ALL" AND NOT UPGRADINGPRODUCTCODE</Custom>
+    </InstallExecuteSequence>
+  </Product>
+</Wix>

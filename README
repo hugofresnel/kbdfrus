@@ -1,0 +1,124 @@
+French (US) Keyboard Layout
+===========================
+
+The Linux keyboard layout **French (US)**, ported to Windows: the US QWERTY
+layout, where AltGr + a letter types a French character, and Shift+AltGr its
+capital. Dead keys are also supported.
+
+Windows has no equivalent. This port installs as a native keyboard layout,
+listed as **French (US, Linux)**, and has the same behavior as on Linux: its
+tables were extracted from the Linux sources (`fr(us)` in xkb and the X11
+Compose table).
+
+Installation
+------------
+
+1. Download and run `kbdfrus-<version>.msi` from the latest GitHub
+   release (administrator rights required).
+2. *French (US, Linux)* should now be in your keyboard list. If not, reboot.
+3. Switch between keyboards with `Win+Space`.
+
+To uninstall: *Settings → Apps → Installed apps*, select it and *Uninstall*.
+
+How it works
+------------
+
+A Windows keyboard layout is a DLL of lookup tables, read by Windows on every
+keystroke:
+
+1. **Scancode → virtual key:** the keyboard sends a scancode, the physical
+   position of the key, translated into a virtual key, the key as Windows
+   names it (`E`, `Enter`…).
+2. **Modifiers → column:** a key types one character per combination of
+   modifiers, each stored in a column (None, Shift, AltGr, Shift+AltGr, …), the
+   modifiers held select the column. AltGr is Ctrl+Alt.
+3. **Virtual key + column → character:** the character is read from the
+   table. Caps Lock swaps the plain and Shift columns, with or without AltGr.
+4. **Dead keys:** a dead key types nothing by itself, it leaves an accent
+   pending, combined with the next character through a table
+   (accent, character) → result.
+
+The tables were extracted once from Linux through `libxkbcommon`, then written
+as static C data in the format of the Windows header `kbd.h`. The MSI copies
+the DLL into `System32`, registers it as a keyboard layout and adds it to the
+keyboards of the installing user.
+
+Pitfalls of the DLL
+-------------------
+
+A keyboard layout DLL is not an ordinary DLL: Windows reads it in two ways.
+Modern apps load it like any library and call `KbdLayerDescriptor`. All other
+apps go through the kernel, which does not run the DLL: it reads the tables
+straight from the file, and expects the same file structure as the layouts of
+Windows.
+
+The DLL is therefore linked like the layouts of Windows, by
+`x86_64-w64-mingw32-gcc`:
+
+* Tables not `const`: in `.data`, read by the kernel, not in `.rdata`.
+* `-fno-zero-initialized-in-bss`: zeroed tables in `.data` too, not in `.bss`.
+* `--subsystem=native`: native subsystem, as the layouts of Windows.
+* `--entry=0`: no entry point.
+* `-nostdlib`: no C runtime, so no imports.
+
+Keys
+----
+
+AltGr Keys:
+
++---------------------+-----------------+-------------+
+| Key                 | AltGr           | Shift+AltGr |
++---------------------+-----------------+-------------+
+| `` ` ``             | dead grave      |             |
+| `4`                 | €               | ¤           |
+| `5`                 | €               |             |
+| `6`                 | dead circumflex |             |
+| `e`                 | é               | É           |
+| `r`                 | è               | È           |
+| `y`                 | ÿ               | Ÿ           |
+| `u`                 | ù               | Ù           |
+| `i`                 | ï               | Ï           |
+| `o`                 | ô               | Ô           |
+| `p`                 | œ               | Œ           |
+| `[`                 | «               | “           |
+| `]`                 | »               | ”           |
+| `a`                 | à               | À           |
+| `s`                 | æ               | Æ           |
+| `d`                 | ê               | Ê           |
+| `f`                 | ë               | Ë           |
+| `h`                 | ü               | Ü           |
+| `j`                 | û               | Û           |
+| `k`                 | î               | Î           |
+| `'`                 | dead diaeresis  | °           |
+| `z`                 | â               | Â           |
+| `c`                 | ç               | Ç           |
+| `<` (ISO keyboards) | `|`             | `¦`         |
++---------------------+-----------------+-------------+
+
+Other keys type the same character with or without AltGr.
+
+Caps Lock also applies with AltGr: with Caps Lock on, AltGr+`e` types `É`.
+
+Dead keys, followed by another key:
+
++------------------------------+-----------------------------------------+
+| Dead key                     | Examples                                |
++------------------------------+-----------------------------------------+
+| AltGr+`` ` `` (grave)        | a → à, e → è, u → ù, Space → `` ` ``    |
+| AltGr+`6` (circumflex)       | a → â, e → ê, c → ĉ, 2 → ², Space → `^` |
+| AltGr+`'` (diaeresis)        | e → ë, i → ï, y → ÿ, Space → `"`        |
+| AltGr+`` ` `` then AltGr+`6` | a → ầ, e → ề, o → ồ                     |
++------------------------------+-----------------------------------------+
+
+These are examples: the full list of sequences is in `src/dead_keys.c`.
+
+Limitations
+-----------
+
+* The keyboard is added to the list of the installing user only.
+* 64-bit Windows on x86-64 only: no ARM64 or 32-bit DLL support.
+
+License
+-------
+
+MIT, see `LICENSE`.
